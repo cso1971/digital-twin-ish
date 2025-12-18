@@ -35,7 +35,7 @@ public record Order
         lock (Lock)
         {
             _orderCounter++;
-            var orderNumber = $"ORD-{DateTime.UtcNow.Year}-{_orderCounter:D6}";
+            var orderNumber = $"ORD-{DateTime.UtcNow.ToString("yyyyMMddHHmmss")}-{_orderCounter:D4}";
             var customerNumber = _orderCounter;
             var customerId = $"CUST-{customerNumber:D6}";
 

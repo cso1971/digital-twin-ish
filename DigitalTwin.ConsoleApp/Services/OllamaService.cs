@@ -34,6 +34,30 @@ public class OllamaService
         return result?.Response ?? string.Empty;
     }
 
+    public async Task<OllamaGenerateDetailedResponse> GenerateDetailedAsync(string prompt, string? model = null, CancellationToken cancellationToken = default)
+    {
+        model ??= _settings.DefaultModel;
+
+        var request = new
+        {
+            model = model,
+            prompt = prompt,
+            stream = false
+        };
+
+        var response = await _httpClient.PostAsJsonAsync("/api/generate", request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<OllamaGenerateDetailedResponse>(cancellationToken: cancellationToken);
+        
+        if (result == null)
+        {
+            throw new InvalidOperationException("Failed to deserialize Ollama response");
+        }
+
+        return result;
+    }
+
     public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -152,6 +176,42 @@ public class OllamaService
     private class OllamaGenerateResponse
     {
         public string Response { get; set; } = string.Empty;
+    }
+
+    public class OllamaGenerateDetailedResponse
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("model")]
+        public string Model { get; set; } = string.Empty;
+
+        [System.Text.Json.Serialization.JsonPropertyName("created_at")]
+        public DateTime CreatedAt { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("response")]
+        public string Response { get; set; } = string.Empty;
+
+        [System.Text.Json.Serialization.JsonPropertyName("done")]
+        public bool Done { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("context")]
+        public long[]? Context { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("total_duration")]
+        public long? TotalDuration { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("load_duration")]
+        public long? LoadDuration { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("prompt_eval_count")]
+        public int? PromptEvalCount { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("prompt_eval_duration")]
+        public long? PromptEvalDuration { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("eval_count")]
+        public int? EvalCount { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("eval_duration")]
+        public long? EvalDuration { get; set; }
     }
 
     private class OllamaTagsResponse

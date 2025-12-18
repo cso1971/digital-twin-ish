@@ -1,0 +1,62 @@
+services:
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    # GPU is optional - uncomment if you have GPU support
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - capabilities: [gpu]
+
+  ollama-init:
+    image: ollama/ollama
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Attendo che Ollama sia completamente pronto..."
+        sleep 10
+        echo "Verifico se il modello llama3.2 è già presente..."
+        if ! ollama list | grep -q "llama3.2"; then
+          echo "Scaricamento modello llama3.2..."
+          ollama pull llama3.2
+          echo "Modello llama3.2 scaricato con successo!"
+        else
+          echo "Modello llama3.2 già presente, skip del download."
+        fi
+        echo "Verifico se il modello nomic-embed-text è già presente..."
+        if ! ollama list | grep -q "nomic-embed-text"; then
+          echo "Scaricamento modello nomic-embed-text..."
+          ollama pull nomic-embed-text
+          echo "Modello nomic-embed-text scaricato con successo!"
+        else
+          echo "Modello nomic-embed-text già presente, skip del download."
+        fi
+
+  qdrant:
+    image: qdrant/qdrant
+    ports:
+      - "6333:6333"  # HTTP REST API
+      - "6334:6334"  # gRPC
+    volumes:
+      - qdrant:/qdrant/storage
+
+volumes:
+  ollama:
+  qdrant:
